@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	_ "fmt"
 	"log"
 
 	handlers "expense-tracker-api/handlers"
@@ -20,7 +19,7 @@ var collection *mongo.Collection
 
 var authHandler *handlers.AuthHandler
 
-func main() {
+func init() {
 	ctx := context.Background()
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://127.0.0.1:27017"))
 	if err = client.Ping(context.TODO(), readpref.Primary()); err != nil {
@@ -28,6 +27,11 @@ func main() {
 	}
 	log.Println("Connected to MongoDB")
 
+	collectionUsers := client.Database("expense").Collection("users")
+	authHandler = handlers.NewAuthHandler(ctx, collectionUsers)
+}
+
+func main() {
 	router := gin.Default()
 	router.POST("/register", authHandler.RegisterUser)
 	router.Run(":5050")
