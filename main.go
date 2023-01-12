@@ -34,5 +34,6 @@ func init() {
 func main() {
 	router := gin.Default()
 	router.POST("/register", authHandler.RegisterUser)
+	router.POST("/signin", authHandler.SignInHandler)
 	router.Run(":5050")
 }

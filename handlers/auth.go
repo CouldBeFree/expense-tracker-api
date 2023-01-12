@@ -29,7 +29,7 @@ type ErrorMsg struct {
 }
 
 type Claims struct {
-	Username string `json:"username"`
+	Email string `json:"email"`
 	jwt.StandardClaims
 }
 
@@ -119,23 +119,6 @@ func (handler *AuthHandler) RegisterUser(c *gin.Context) {
 		return
 	}
 
-	// if userUserNameErr != nil && userUserNameErr == mongo.ErrNoDocuments {
-	// 	// Continue
-	// 	c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"No user": userUserNameErr})
-	// 	return
-	// }
-
-	// if userUserNameErr != nil {
-	// 	if userUserNameErr == mongo.ErrNoDocuments {
-	// 		// Continue
-	// 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"No user": userUserNameErr})
-	// 		return
-	// 	}
-	// } else {
-	// 	c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"Username": userFromDB.Username})
-	// 	return
-	// }
-
 	h := sha256.New()
 	insertResult, err := handler.collection.InsertOne(handler.ctx, bson.M{
 		"username": user.Username,
@@ -151,9 +134,12 @@ func (handler *AuthHandler) RegisterUser(c *gin.Context) {
 }
 
 func (handler *AuthHandler) SignInHandler(c *gin.Context) {
-	var user models.User
+	var user models.LogggedInUser
+	fmt.Printf("1")
 
 	if err := c.ShouldBindJSON(&user); err != nil {
+		fmt.Printf("|2")
+		fmt.Print(user)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -161,7 +147,7 @@ func (handler *AuthHandler) SignInHandler(c *gin.Context) {
 	h := sha256.New()
 
 	cur := handler.collection.FindOne(handler.ctx, bson.M{
-		"username": user.Username,
+		"email":    user.Email,
 		"password": string(h.Sum([]byte(user.Password))),
 	})
 
@@ -172,7 +158,7 @@ func (handler *AuthHandler) SignInHandler(c *gin.Context) {
 
 	expirationTime := time.Now().Add(10 * time.Minute)
 	claims := &Claims{
-		Username: user.Username,
+		Email: user.Email,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
 		},

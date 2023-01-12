@@ -5,3 +5,8 @@ type User struct {
 	Password string `json:"password" binding:"required"`
 	Email    string `json:"email" binding:"required,email"`
 }
+
+type LogggedInUser struct {
+	Password string `json:"password" binding:"required"`
+	Email    string `json:"email" binding:"required,email"`
+}
