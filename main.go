@@ -18,6 +18,7 @@ var client *mongo.Client
 var collection *mongo.Collection
 
 var authHandler *handlers.AuthHandler
+var categoriesHandler *handlers.CategoryHandler
 
 func init() {
 	ctx := context.Background()
@@ -29,11 +30,29 @@ func init() {
 
 	collectionUsers := client.Database("expense").Collection("users")
 	authHandler = handlers.NewAuthHandler(ctx, collectionUsers)
+
+	collectionCategories := client.Database("expense").Collection("categories")
+	categoriesHandler = handlers.NewCategoryHandler(ctx, collectionCategories)
 }
 
 func main() {
 	router := gin.Default()
+
+	router.Use(authHandler.CORSMiddleware())
+
 	router.POST("/register", authHandler.RegisterUser)
 	router.POST("/signin", authHandler.SignInHandler)
+
+	authorized := router.Group("/")
+	authorized.Use(authHandler.AuthMiddleware())
+
+	{
+		authorized.GET("/categories", categoriesHandler.ListCategory)
+		authorized.POST("/create-category", categoriesHandler.CreateCategory)
+		authorized.GET("/category/:id", categoriesHandler.GetCategory)
+		authorized.DELETE("/category/:id", categoriesHandler.DeleteCategory)
+		authorized.PUT("/category/:id", categoriesHandler.UpdateCategory)
+	}
+
 	router.Run(":5050")
 }

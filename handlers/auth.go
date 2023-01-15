@@ -66,6 +66,22 @@ func (handler *AuthHandler) AuthMiddleware() gin.HandlerFunc {
 	}
 }
 
+func (handler *AuthHandler) CORSMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	}
+}
+
 func (handler *AuthHandler) SignOutHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "User signed out"})
 }
@@ -83,7 +99,6 @@ func getErrorMsg(fe validator.FieldError) string {
 }
 
 func (handler *AuthHandler) RegisterUser(c *gin.Context) {
-	// 2. Check if user with username exists
 	var user models.User
 
 	if err := c.ShouldBindJSON(&user); err != nil {
@@ -135,11 +150,8 @@ func (handler *AuthHandler) RegisterUser(c *gin.Context) {
 
 func (handler *AuthHandler) SignInHandler(c *gin.Context) {
 	var user models.LogggedInUser
-	fmt.Printf("1")
 
 	if err := c.ShouldBindJSON(&user); err != nil {
-		fmt.Printf("|2")
-		fmt.Print(user)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -152,11 +164,11 @@ func (handler *AuthHandler) SignInHandler(c *gin.Context) {
 	})
 
 	if cur.Err() != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid username or password"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid email or password"})
 		return
 	}
 
-	expirationTime := time.Now().Add(10 * time.Minute)
+	expirationTime := time.Now().Add(100 * time.Minute)
 	claims := &Claims{
 		Email: user.Email,
 		StandardClaims: jwt.StandardClaims{
