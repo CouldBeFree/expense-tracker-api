@@ -61,7 +61,9 @@ func (handler *CategoryHandler) CreateCategory(c *gin.Context) {
 	}
 
 	category.ID = primitive.NewObjectID()
-	_, err := handler.collection.InsertOne(handler.ctx, category)
+	createdCategory, err := handler.collection.InsertOne(handler.ctx, category)
+
+	fmt.Println(createdCategory.InsertedID)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while creating new category"})
@@ -76,7 +78,6 @@ func (handler *CategoryHandler) GetCategory(c *gin.Context) {
 
 	id := c.Param("id")
 	objectId, _ := primitive.ObjectIDFromHex(id)
-	fmt.Print(objectId)
 
 	err := handler.collection.FindOne(handler.ctx, bson.D{{"_id", objectId}}).Decode(&category)
 	if err != nil {
