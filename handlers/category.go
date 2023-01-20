@@ -13,14 +13,16 @@ import (
 )
 
 type CategoryHandler struct {
-	collection *mongo.Collection
-	ctx        context.Context
+	collection     *mongo.Collection
+	userCollection *mongo.Collection
+	ctx            context.Context
 }
 
-func NewCategoryHandler(ctx context.Context, collection *mongo.Collection) *CategoryHandler {
+func NewCategoryHandler(ctx context.Context, collection *mongo.Collection, usrCollection *mongo.Collection) *CategoryHandler {
 	return &CategoryHandler{
-		collection: collection,
-		ctx:        ctx,
+		collection:     collection,
+		userCollection: usrCollection,
+		ctx:            ctx,
 	}
 }
 
@@ -45,9 +47,20 @@ func (handler *CategoryHandler) ListCategory(c *gin.Context) {
 
 func (handler *CategoryHandler) CreateCategory(c *gin.Context) {
 	var category models.Category
+	var user models.User
+	email := c.MustGet("email")
 
 	if err := c.ShouldBindJSON(&category); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userErr := handler.userCollection.FindOne(handler.ctx, bson.M{
+		"email": email,
+	}).Decode(&user)
+
+	if userErr != nil {
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"user": userErr.Error()})
 		return
 	}
 
@@ -61,7 +74,19 @@ func (handler *CategoryHandler) CreateCategory(c *gin.Context) {
 	}
 
 	category.ID = primitive.NewObjectID()
+	category.Owner = user.ID
 	createdCategory, err := handler.collection.InsertOne(handler.ctx, category)
+
+	_, updateErr := handler.userCollection.UpdateOne(handler.ctx, bson.M{
+		"email": email,
+	}, bson.D{{"$push", bson.D{
+		{"categories", createdCategory.InsertedID},
+	}}})
+
+	if updateErr != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": updateErr.Error()})
+		return
+	}
 
 	fmt.Println(createdCategory.InsertedID)
 
@@ -89,6 +114,7 @@ func (handler *CategoryHandler) GetCategory(c *gin.Context) {
 }
 
 func (handler *CategoryHandler) DeleteCategory(c *gin.Context) {
+	email := c.MustGet("email")
 	id := c.Param("id")
 	objectId, _ := primitive.ObjectIDFromHex(id)
 
@@ -97,7 +123,17 @@ func (handler *CategoryHandler) DeleteCategory(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Category not found"})
 		return
 	}
-	fmt.Printf("deleted %v documents\n", res.DeletedCount)
+
+	_, updateErr := handler.userCollection.UpdateOne(handler.ctx, bson.M{
+		"email": email,
+	}, bson.D{{"$pull", bson.D{
+		{"categories", objectId},
+	}}})
+
+	if updateErr != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": updateErr.Error()})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Category successfully removed"})
 }

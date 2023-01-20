@@ -32,7 +32,7 @@ func init() {
 	authHandler = handlers.NewAuthHandler(ctx, collectionUsers)
 
 	collectionCategories := client.Database("expense").Collection("categories")
-	categoriesHandler = handlers.NewCategoryHandler(ctx, collectionCategories)
+	categoriesHandler = handlers.NewCategoryHandler(ctx, collectionCategories, collectionUsers)
 }
 
 func main() {

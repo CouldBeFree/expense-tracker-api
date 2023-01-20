@@ -1,9 +1,13 @@
 package models
 
+import "go.mongodb.org/mongo-driver/bson/primitive"
+
 type User struct {
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
-	Email    string `json:"email" binding:"required,email"`
+	ID         primitive.ObjectID   `bson:"_id"`
+	Username   string               `json:"username" binding:"required"`
+	Password   string               `json:"password" binding:"required"`
+	Email      string               `json:"email" binding:"required,email"`
+	Categories []primitive.ObjectID `bson:"categories,omitempty"`
 }
 
 type LogggedInUser struct {

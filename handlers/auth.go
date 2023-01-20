@@ -54,6 +54,10 @@ func (handler *AuthHandler) AuthMiddleware() gin.HandlerFunc {
 			return []byte("poler"), nil
 		})
 
+		if claims, ok := tkn.Claims.(*Claims); ok && tkn.Valid {
+			c.Set("email", claims.Email)
+		}
+
 		if err != nil {
 			c.AbortWithStatus(http.StatusUnauthorized)
 		}
