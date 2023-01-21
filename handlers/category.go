@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"expense-tracker-api/models"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -85,11 +86,38 @@ func (handler *CategoryHandler) CreateCategory(c *gin.Context) {
 		return
 	}
 
-	caregoryErr := handler.collection.FindOne(handler.ctx, bson.M{
-		"name": category.Name,
-	}).Decode(&category)
+	pipeline := mongo.Pipeline{
+		{{"$match", bson.D{
+			{"owner", bson.D{
+				{"$eq", user.ID},
+			},
+			},
+			{"name", bson.D{
+				{"$eq", category.Name},
+			},
+			},
+		}}},
+	}
 
-	if caregoryErr != mongo.ErrNoDocuments && caregoryErr == nil {
+	if userErr != nil {
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"user": userErr.Error()})
+		return
+	}
+
+	cur, caregoryErr := handler.collection.Aggregate(handler.ctx, pipeline)
+	log.Print(caregoryErr)
+
+	defer cur.Close(handler.ctx)
+	categories := make([]models.Category, 0)
+
+	for cur.Next(handler.ctx) {
+		var category models.Category
+		cur.Decode(&category)
+		categories = append(categories, category)
+	}
+	log.Print(len(categories))
+
+	if len(categories) > 0 {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"Category": "Category alredy exists"})
 		return
 	}
