@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"expense-tracker-api/models"
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -27,7 +26,29 @@ func NewCategoryHandler(ctx context.Context, collection *mongo.Collection, usrCo
 }
 
 func (handler *CategoryHandler) ListCategory(c *gin.Context) {
-	cur, err := handler.collection.Find(handler.ctx, bson.M{})
+	// var pipeline monongo.pipeline
+	var user models.User
+	email := c.MustGet("email")
+	userErr := handler.userCollection.FindOne(handler.ctx, bson.M{
+		"email": email,
+	}).Decode(&user)
+
+	if userErr != nil {
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"user": userErr.Error()})
+		return
+	}
+
+	pipeline := mongo.Pipeline{
+		{{"$match", bson.D{
+			{"owner", bson.D{
+				{"$eq", user.ID},
+			},
+			},
+		}}},
+	}
+
+	cur, err := handler.collection.Aggregate(handler.ctx, pipeline)
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -88,8 +109,6 @@ func (handler *CategoryHandler) CreateCategory(c *gin.Context) {
 		return
 	}
 
-	fmt.Println(createdCategory.InsertedID)
-
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while creating new category"})
 		return
@@ -118,7 +137,7 @@ func (handler *CategoryHandler) DeleteCategory(c *gin.Context) {
 	id := c.Param("id")
 	objectId, _ := primitive.ObjectIDFromHex(id)
 
-	res, err := handler.collection.DeleteOne(handler.ctx, bson.D{{"_id", objectId}})
+	_, err := handler.collection.DeleteOne(handler.ctx, bson.D{{"_id", objectId}})
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Category not found"})
 		return
