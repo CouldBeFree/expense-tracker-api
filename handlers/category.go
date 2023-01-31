@@ -39,6 +39,7 @@ func (handler *CategoryHandler) ListCategory(c *gin.Context) {
 		return
 	}
 
+	// TODO: remove owner from response
 	pipeline := mongo.Pipeline{
 		{{"$match", bson.D{
 			{"owner", bson.D{

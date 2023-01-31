@@ -19,6 +19,7 @@ var collection *mongo.Collection
 
 var authHandler *handlers.AuthHandler
 var categoriesHandler *handlers.CategoryHandler
+var transactionHandler *handlers.TransactionHandler
 
 func init() {
 	ctx := context.Background()
@@ -32,7 +33,14 @@ func init() {
 	authHandler = handlers.NewAuthHandler(ctx, collectionUsers)
 
 	collectionCategories := client.Database("expense").Collection("categories")
+	collectionTransactions := client.Database("expense").Collection("transactions")
+	log.Print(collectionTransactions)
+	log.Print(collectionCategories)
+
 	categoriesHandler = handlers.NewCategoryHandler(ctx, collectionCategories, collectionUsers)
+	transactionHandler = handlers.NewTransactionHandler(ctx, collectionTransactions, collectionUsers)
+	log.Print(transactionHandler)
+	log.Print(categoriesHandler)
 }
 
 func main() {
@@ -47,11 +55,16 @@ func main() {
 	authorized.Use(authHandler.AuthMiddleware())
 
 	{
+		//Categories
 		authorized.GET("/categories", categoriesHandler.ListCategory)
 		authorized.POST("/create-category", categoriesHandler.CreateCategory)
 		authorized.GET("/category/:id", categoriesHandler.GetCategory)
 		authorized.DELETE("/category/:id", categoriesHandler.DeleteCategory)
 		authorized.PUT("/category/:id", categoriesHandler.UpdateCategory)
+
+		//Transactions
+		authorized.POST("/create-transaction", transactionHandler.CreateTransaction)
+		authorized.GET("/transactions", transactionHandler.ListTransaction)
 	}
 
 	router.Run(":5050")
