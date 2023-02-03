@@ -5,6 +5,7 @@ import (
 )
 
 // Make Type -> enum
+// Hobbies: []string{"IT","Travel"}
 type Transaction struct {
 	ID       primitive.ObjectID       `json:"id" bson:"_id"`
 	Category primitive.ObjectID       `bson:"category,omitempty" json:"category"`

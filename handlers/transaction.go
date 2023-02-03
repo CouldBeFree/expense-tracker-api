@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"expense-tracker-api/models"
-	"log"
 	"net/http"
 	"time"
 
@@ -85,8 +84,6 @@ func (handler *TransactionHandler) ListTransaction(c *gin.Context) {
 	}
 
 	// TODO: remove owner from response
-	// lookupStage := bson.D{{"$lookup", bson.D{{"from", "categories"}, {"localField", "category"}, {"foreignField", "_id"}, {"as", "podcast"}}}}
-	// matchStage := bson.D{{"$lookup", bson.D{{"from", "categories"}, {"localField", "category"}, {"foreignField", "_id"}, {"as", "podcast"}}}}
 	pipeline := mongo.Pipeline{
 		{{"$match", bson.D{
 			{"owner", bson.D{
@@ -115,9 +112,64 @@ func (handler *TransactionHandler) ListTransaction(c *gin.Context) {
 	for cur.Next(handler.ctx) {
 		var transaction models.Transaction
 		cur.Decode(&transaction)
-		log.Print(transaction.Cat)
 		transactions = append(transactions, transaction)
 	}
 
 	c.JSON(http.StatusOK, transactions)
+}
+
+func (handler *TransactionHandler) DeleteTransaction(c *gin.Context) {
+	email := c.MustGet("email")
+	id := c.Param("id")
+	objectId, _ := primitive.ObjectIDFromHex(id)
+
+	_, err := handler.collection.DeleteOne(handler.ctx, bson.D{{"_id", objectId}})
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Transaction not found"})
+		return
+	}
+
+	_, updateErr := handler.userCollection.UpdateOne(handler.ctx, bson.M{
+		"email": email,
+	}, bson.D{{"$pull", bson.D{
+		{"transactions", objectId},
+	}}})
+
+	if updateErr != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": updateErr.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Transaction successfully removed"})
+}
+
+func (handler *TransactionHandler) UpdateTransaction(c *gin.Context) {
+	var transaction models.Transaction
+	id := c.Param("id")
+
+	if err := c.ShouldBindJSON(&transaction); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	const shortForm = "2006-01-02"
+	dt, _ := time.Parse(shortForm, transaction.Date)
+	transaction.InvDt = primitive.NewDateTimeFromTime(dt)
+
+	objectId, _ := primitive.ObjectIDFromHex(id)
+	_, err := handler.collection.UpdateOne(handler.ctx, bson.M{
+		"_id": objectId,
+	}, bson.D{{"$set", bson.D{
+		{"amount", transaction.Amount},
+		{"category", transaction.Category},
+		{"date", transaction.Date},
+		{"InvDt", transaction.InvDt},
+	}}})
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Transaction was successfully updated"})
 }
