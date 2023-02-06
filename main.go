@@ -67,6 +67,7 @@ func main() {
 		authorized.GET("/transactions", transactionHandler.ListTransaction)
 		authorized.DELETE("/transaction/:id", transactionHandler.DeleteTransaction)
 		authorized.PUT("/transaction/:id", transactionHandler.UpdateTransaction)
+		authorized.GET("/transaction-by-category", transactionHandler.GetTransactionsByCategory)
 	}
 
 	router.Run(":5050")

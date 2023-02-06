@@ -173,3 +173,55 @@ func (handler *TransactionHandler) UpdateTransaction(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Transaction was successfully updated"})
 }
+
+func (handler *TransactionHandler) GetTransactionsByCategory(c *gin.Context) {
+	var user models.User
+	email := c.MustGet("email")
+
+	userErr := handler.userCollection.FindOne(handler.ctx, bson.M{
+		"email": email,
+	}).Decode(&user)
+
+	if userErr != nil {
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"user": userErr.Error()})
+		return
+	}
+
+	matchStage := bson.D{{"$match", bson.D{{"owner", bson.D{{"$eq", user.ID}}}}}}
+	group := bson.D{{
+		"$group", bson.D{
+			{
+				"_id", "$category",
+			},
+			{"amount", bson.D{{"$sum", "$amount"}}},
+		},
+	}}
+	pipeline := mongo.Pipeline{
+		matchStage,
+		group,
+		{{"$lookup", bson.D{
+			{"from", "categories"},
+			{"localField", "_id"},
+			{"foreignField", "_id"},
+			{"as", "cat"},
+		}}},
+	}
+
+	cur, err := handler.collection.Aggregate(handler.ctx, pipeline)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	defer cur.Close(handler.ctx)
+	transactions := make([]models.Transaction, 0)
+
+	for cur.Next(handler.ctx) {
+		var transaction models.Transaction
+		cur.Decode(&transaction)
+		transactions = append(transactions, transaction)
+	}
+
+	c.JSON(http.StatusOK, transactions)
+}

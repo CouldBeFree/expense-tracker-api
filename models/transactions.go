@@ -7,11 +7,22 @@ import (
 // Make Type -> enum
 // Hobbies: []string{"IT","Travel"}
 type Transaction struct {
-	ID       primitive.ObjectID       `json:"id" bson:"_id"`
-	Category primitive.ObjectID       `bson:"category,omitempty" json:"category"`
-	Amount   string                   `json:"amount" binding:"required"`
-	Owner    primitive.ObjectID       `bson:"owner,omitempty" json:"owner"`
-	InvDt    primitive.DateTime       `bson:"invdt,omitempty" json:"invdt,omitempty"`
-	Date     string                   `json:"date" binding:"required"`
-	Cat      []map[string]interface{} `json:"cat" bson:"cat"`
+	ID           primitive.ObjectID       `json:"id" bson:"_id"`
+	Category     primitive.ObjectID       `bson:"category,omitempty" json:"category"`
+	Amount       int                      `json:"amount" binding:"required"`
+	Converted    int                      `bson:"converted,omitempty" json:"converted,omitempty"`
+	Owner        primitive.ObjectID       `bson:"owner,omitempty" json:"owner"`
+	InvDt        primitive.DateTime       `bson:"invdt,omitempty" json:"invdt,omitempty"`
+	Date         string                   `json:"date" binding:"required"`
+	Cat          []map[string]interface{} `json:"cat" bson:"cat"`
+	Transactions []map[string]interface{} `json:"transactions" bson:"transactions"`
+}
+
+// Make Type -> enum
+// Hobbies: []string{"IT","Travel"}
+type TransactionCategory struct {
+	Total        string                   `json:"id" bson:"total"`
+	Name         string                   `json:"name" bson:"name"`
+	ID           primitive.ObjectID       `json:"id" bson:"_id"`
+	Transactions []map[string]interface{} `json:"transactions" bson:"transactions"`
 }
