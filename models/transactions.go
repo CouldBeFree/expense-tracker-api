@@ -21,8 +21,7 @@ type Transaction struct {
 // Make Type -> enum
 // Hobbies: []string{"IT","Travel"}
 type TransactionCategory struct {
-	Total        string                   `json:"id" bson:"total"`
-	Name         string                   `json:"name" bson:"name"`
-	ID           primitive.ObjectID       `json:"id" bson:"_id"`
-	Transactions []map[string]interface{} `json:"transactions" bson:"transactions"`
+	Total int                      `json:"total" bson:"total"`
+	Cat   []map[string]interface{} `json:"category" bson:"category"`
+	ID    primitive.ObjectID       `json:"id" bson:"_id"`
 }

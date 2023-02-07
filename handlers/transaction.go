@@ -193,7 +193,7 @@ func (handler *TransactionHandler) GetTransactionsByCategory(c *gin.Context) {
 			{
 				"_id", "$category",
 			},
-			{"amount", bson.D{{"$sum", "$amount"}}},
+			{"total", bson.D{{"$sum", "$amount"}}},
 		},
 	}}
 	pipeline := mongo.Pipeline{
@@ -203,7 +203,7 @@ func (handler *TransactionHandler) GetTransactionsByCategory(c *gin.Context) {
 			{"from", "categories"},
 			{"localField", "_id"},
 			{"foreignField", "_id"},
-			{"as", "cat"},
+			{"as", "category"},
 		}}},
 	}
 
@@ -215,10 +215,10 @@ func (handler *TransactionHandler) GetTransactionsByCategory(c *gin.Context) {
 	}
 
 	defer cur.Close(handler.ctx)
-	transactions := make([]models.Transaction, 0)
+	transactions := make([]models.TransactionCategory, 0)
 
 	for cur.Next(handler.ctx) {
-		var transaction models.Transaction
+		var transaction models.TransactionCategory
 		cur.Decode(&transaction)
 		transactions = append(transactions, transaction)
 	}
