@@ -7,5 +7,6 @@ type Category struct {
 	ID    primitive.ObjectID `json:"id" bson:"_id"`
 	Name  string             `json:"name" binding:"required"`
 	Type  string             `json:"type" binding:"required"`
-	Owner primitive.ObjectID `bson:"owner,omitempty"`
+	Owner primitive.ObjectID `bson:"owner,omitempty" json:"owner"`
+	Color string             `json:"color" bson:"color"`
 }

@@ -201,6 +201,7 @@ func (handler *CategoryHandler) UpdateCategory(c *gin.Context) {
 	}, bson.D{{"$set", bson.D{
 		{"name", category.Name},
 		{"type", category.Type},
+		{"color", category.Color},
 	}}})
 
 	if err != nil {
