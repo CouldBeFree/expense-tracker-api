@@ -3,6 +3,7 @@ package handlers
 import (
 	"expense-tracker-api/models"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -72,6 +73,7 @@ func (handler *TransactionHandler) CreateTransaction(c *gin.Context) {
 }
 
 func (handler *TransactionHandler) ListTransaction(c *gin.Context) {
+	limit := c.Query("limit")
 	var user models.User
 	email := c.MustGet("email")
 	userErr := handler.userCollection.FindOne(handler.ctx, bson.M{
@@ -83,20 +85,24 @@ func (handler *TransactionHandler) ListTransaction(c *gin.Context) {
 		return
 	}
 
+	limitInt, _ := strconv.Atoi(limit)
+	if limitInt == 0 {
+		limitInt = 10
+	}
+
 	// TODO: remove owner from response
 	pipeline := mongo.Pipeline{
-		{{"$match", bson.D{
-			{"owner", bson.D{
-				{"$eq", user.ID},
-			},
-			},
+		{{"$sort", bson.D{
+			{"_id", -1},
 		}}},
+		{{"$match", bson.D{{"owner", bson.D{{"$eq", user.ID}}}}}},
 		{{"$lookup", bson.D{
 			{"from", "categories"},
 			{"localField", "category"},
 			{"foreignField", "_id"},
 			{"as", "cat"},
 		}}},
+		{{"$limit", limitInt}},
 	}
 
 	cur, err := handler.collection.Aggregate(handler.ctx, pipeline)

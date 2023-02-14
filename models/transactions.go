@@ -7,9 +7,10 @@ import (
 // Make Type -> enum
 // Hobbies: []string{"IT","Travel"}
 type Transaction struct {
-	ID           primitive.ObjectID       `json:"id" bson:"_id"`
-	Category     primitive.ObjectID       `bson:"category,omitempty" json:"category"`
-	Amount       int                      `json:"amount" binding:"required"`
+	ID       primitive.ObjectID `json:"id" bson:"_id"`
+	Category primitive.ObjectID `bson:"category,omitempty" json:"category"`
+	Amount   int                `json:"amount" binding:"required"`
+	// Count        int                      `bson:"count" json:"count"`
 	Converted    int                      `bson:"converted,omitempty" json:"converted,omitempty"`
 	Owner        primitive.ObjectID       `bson:"owner,omitempty" json:"owner"`
 	InvDt        primitive.DateTime       `bson:"invdt,omitempty" json:"invdt,omitempty"`
